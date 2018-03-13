@@ -55,3 +55,10 @@ class Notifier(object):
         finally:
             for listener in self.listeners:
                 listener.stop()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+        self._reader.join(0.1)
