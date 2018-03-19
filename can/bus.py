@@ -12,6 +12,7 @@ import logging
 import threading
 
 from can.broadcastmanager import ThreadBasedCyclicSendTask
+from can import CanError
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +48,19 @@ class BusABC(object):
         :param dict config:
             Any backend dependent configurations are passed in this dictionary
         """
+        self._open = True
         self._tx_threads = list()
 
     def __str__(self):
         return self.channel_info
+
+    def _check_if_open(self):
+        """Raises CanError if the bus is not open.
+
+        Has to be called in every method that accesses the bus.
+        """
+        if not self._open:
+            raise CanError('Operation on closed bus')
 
     @abstractmethod
     def recv(self, timeout=None):
@@ -147,13 +157,16 @@ class BusABC(object):
         in shutting down a bus.
         """
         self.flush_tx_buffer()
+        self._open = False
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # Stop every TX thread
         for t in self._tx_threads:
             t.stop()
+
         self.shutdown()
 
     __metaclass__ = ABCMeta
