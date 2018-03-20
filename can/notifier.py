@@ -61,4 +61,5 @@ class Notifier(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
-        self._reader.join(0.1)
+        if self.timeout is None:
+            self._reader.join(0.1)
